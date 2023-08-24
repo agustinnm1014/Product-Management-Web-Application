@@ -1,21 +1,24 @@
 <?php
-// Include the database connection
+
 include 'config.php';
 
-// Get data from the Ajax request
+
 $id = $_POST['id'];
 
-// Sanitize and escape the ID
+
 $id = mysqli_real_escape_string($conn, $id);
 
-// Delete data from the database
-$query = "DELETE FROM products WHERE id = '$id'";
+// Delete data from the database using a prepared statement
+$query = "DELETE FROM products WHERE id = ?";
+$stmt = $conn->prepare($query);
+$stmt->bind_param("i", $id);
 
-if ($conn->query($query) === TRUE) {
-    echo "Product deleted successfully";
+if ($stmt->execute()) {
+    echo "Product Deleted Successfully";
 } else {
-    echo "Error: " . $query . "<br>" . $conn->error;
+    echo "Error: " . $stmt->error;
 }
 
+$stmt->close();
 $conn->close();
 ?>

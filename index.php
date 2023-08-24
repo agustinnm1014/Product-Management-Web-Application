@@ -13,16 +13,20 @@
 
         <h2 class="text-center">Product List</h2>
 
-        <button type="button" class="btn btn-primary mb-1 float-end" data-bs-toggle="modal"
-            data-bs-target="#addProductModal">
-            Add Product
-        </button>
 
         <!-- Product List Table -->
         <div class="table-responsive">
             <table class="table">
-
                 <thead>
+                    <tr>
+                        <th colspan="6"></th>
+                        <th class="text-center">
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                                data-bs-target="#addProductModal">
+                                Add Product
+                            </button>
+                        </th>
+                    </tr>
                     <tr>
                         <th>Product Name</th>
                         <th>Unit</th>
@@ -30,7 +34,8 @@
                         <th>Expiry Date</th>
                         <th>Inventory</th>
                         <th>Inventory Cost</th>
-
+                        <th>Image</th>
+                        <th> Actions</th>
 
                     </tr>
                 </thead>
@@ -55,14 +60,13 @@
                         <div class="mb-3">
                             <label for="productName" class="form-label">Product Name</label>
                             <input type="text" class="form-control form-control-sm" id="productName"
-                                pattern="^[A-Za-z0-9 ]+$" required>
-                            <div class="form-text">Product name must contain letters, numbers, or spaces.</div>
+                                pattern="^(?=.*[A-Za-z])[A-Za-z0-9 ]+$" required>
+
                         </div>
                         <div class="mb-3">
                             <label for="unit" class="form-label">Unit</label>
                             <input type="text" class="form-control form-control-sm" id="unit" pattern="^[A-Za-z0-9 ]+$"
                                 required>
-                            <div class="form-text">Unit must contain letters, numbers, or spaces.</div>
                         </div>
                         <div class="mb-3">
                             <label for="price" class="form-label">Price</label>
@@ -76,7 +80,14 @@
                             <label for="inventory" class="form-label">Available Inventory</label>
                             <input type="number" class="form-control form-control-sm" id="inventory" step="1" required>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-sm float-end">Create</button>
+
+                        <div class="mb-3">
+                            <label for="image" class="form-label">Image</label>
+                            <input type="file" class="form-control form-control-sm" id="image" accept="image/*"
+                                required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-sm float-end">Add</button>
                     </form>
 
                 </div>
@@ -94,20 +105,19 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="editForm">
-                        <input type="hidden" id="editProductId"> <!-- Hidden field to store the product ID -->
-
+                    <form id="editForm" enctype="multipart/form-data"> <!-- Add enctype attribute -->
+                        <input type="hidden" id="editProductId">
                         <div class="mb-3">
                             <label for="editProductName" class="form-label">Product Name</label>
                             <input type="text" class="form-control form-control-sm" id="editProductName"
-                                pattern="^[A-Za-z0-9 ]+$" required>
-                            <div class="form-text">Product name must contain letters, numbers, or spaces.</div>
+                                pattern="^(?=.*[A-Za-z])[A-Za-z0-9 ]+$" required>
+
                         </div>
                         <div class="mb-3">
                             <label for="editUnit" class="form-label">Unit</label>
                             <input type="text" class="form-control form-control-sm" id="editUnit"
                                 pattern="^[A-Za-z0-9 ]+$" required>
-                            <div class="form-text">Unit must contain letters, numbers, or spaces.</div>
+
                         </div>
                         <div class="mb-3">
                             <label for="editPrice" class="form-label">Price</label>
@@ -123,12 +133,26 @@
                             <input type="number" class="form-control form-control-sm" id="editInventory" step="1"
                                 required>
                         </div>
+
+                        <div class="mb-3">
+                            <label for="editImage" class="form-label">Current Image</label>
+                            <img src="" alt="Current Product Image" id="currentImage"
+                                style="max-width: 100px; max-height: 100px;">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="editNewImage" class="form-label">New Image</label>
+                            <input type="file" class="form-control form-control-sm" id="editNewImage" accept="image/*">
+                        </div>
+
+
                         <button type="submit" class="btn btn-primary btn-sm float-end">Update</button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
+
 
 
     <!-- JavaScript for Ajax Requests -->
@@ -143,19 +167,39 @@
                 unit: $('#unit').val(),
                 price: $('#price').val(),
                 expiry_date: $('#expiry_date').val(),
-                inventory: $('#inventory').val()
-
+                inventory: $('#inventory').val(),
+                inventory_cost: ($('#price').val() * $('#inventory').val()).toFixed(2), // Calculate inventory cost
+                image: $('#image')[0].files[0]  // Get the uploaded image file
             };
+
+            // Validate if an image is selected
+            if (!product.image) {
+                alert('Please select an image.');
+                return;
+            }
+
+            var formData = new FormData();
+            formData.append('image', product.image);
+            delete product.image;
+            for (var key in product) {
+                formData.append(key, product[key]);
+            }
 
             $.ajax({
                 type: 'POST',
                 url: 'create.php',
-                data: product,
+                data: formData,
+                processData: false,
+                contentType: false,
                 success: function (response) {
                     alert('Product created successfully!');
                     $('#createForm')[0].reset();
-                    $('#addProductModal').modal('hide'); // Close the modal
-                    loadProductList(); // Refresh the product list
+                    $('#addProductModal').modal('hide');
+                    loadProductList();
+                },
+                error: function (xhr, status, error) {
+                    console.error(error);
+                    alert('Error creating product: ' + error);
                 }
             });
         });
@@ -174,7 +218,9 @@
                         var expiryDate = new Date(product.expiry_date);
                         var formattedExpiryDate = expiryDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-                        productList.append('<tr><td>' + product.product_name + '</td> <td>' + product.unit + '</td> <td>' + product.price + '</td> <td>' + formattedExpiryDate + '</td> <td>' + product.inventory + '</td> <td>' + (product.inventory * product.price) + '</td> <td> <button class="btn btn-success " onclick="editProduct(' + product.id + ')">Update</a> <button class="btn btn-danger ms-2" onclick="deleteProduct(' + product.id + ', \'' + product.product_name + '\')">Delete</button></td></tr>');
+                        productList.append('<tr><td>' + product.product_name + '</td> <td>' + product.unit + '</td> <td>' + product.price + '</td> <td>' + formattedExpiryDate + '</td> <td>' + product.inventory + '</td> <td>' + (product.inventory * product.price).toFixed(2) + '</td> <td> <img src="' + product.image_path + '" alt="Product Image" style="max-width: 100px; max-height: 100px;"> </td> <td> <div class="d-flex flex-column flex-sm-row"> <button class="btn btn-success mb-1" onclick="editProduct(' + product.id + ')">Update</button> <button class="btn btn-danger ms-sm-2" onclick="deleteProduct(' + product.id + ', \'' + product.product_name + '\')">Delete</button> </div></td></tr>');
+
+
 
                     });
 
@@ -182,23 +228,13 @@
             });
         }
 
-
-
-        // Load initial product list on page load
-        $(document).ready(function () {
-            loadProductList();
-        });
-
-        // Update Product Information
-        function editProduct(id) {
-            // Send an AJAX request to retrieve the product data
+        function editProduct(productId) {
             $.ajax({
-                url: 'update.php', // Create this PHP file to fetch product data
-                type: 'POST',
-                data: { id: id },
+                type: 'GET',
+                url: 'get_product_details.php',
+                data: { id: productId },
                 success: function (response) {
                     var product = JSON.parse(response);
-                    // Populate the modal fields with product data
                     $('#editProductId').val(product.id);
                     $('#editProductName').val(product.product_name);
                     $('#editUnit').val(product.unit);
@@ -206,36 +242,15 @@
                     $('#editExpiryDate').val(product.expiry_date);
                     $('#editInventory').val(product.inventory);
 
-                    // Show the modal
+
+                    $('#currentImage').attr('src', product.image_path);
+
                     $('#editProductModal').modal('show');
                 }
             });
         }
 
-
-        // Update Product Information
-        function editProduct(id) {
-            $.ajax({
-                url: 'fetch_product.php', // Create this PHP file to fetch product data
-                type: 'POST',
-                data: { id: id },
-                success: function (response) {
-                    var product = JSON.parse(response);
-                    // Populate the modal fields with product data
-                    $('#editProductId').val(product.id);
-                    $('#editProductName').val(product.product_name);
-                    $('#editUnit').val(product.unit);
-                    $('#editPrice').val(product.price);
-                    $('#editExpiryDate').val(product.expiry_date);
-                    $('#editInventory').val(product.inventory);
-
-                    // Show the modal
-                    $('#editProductModal').modal('show');
-                }
-            });
-        }
-
-        // Update Product
+        // Handle the update form submission
         $('#editForm').submit(function (event) {
             event.preventDefault();
 
@@ -245,19 +260,34 @@
                 unit: $('#editUnit').val(),
                 price: $('#editPrice').val(),
                 expiry_date: $('#editExpiryDate').val(),
-                inventory: $('#editInventory').val()
+                inventory: $('#editInventory').val(),
+                inventory_cost: ($('#editPrice').val() * $('#editInventory').val()).toFixed(2), // Calculate updated inventory cost
+                new_image: $('#editNewImage')[0].files[0] // Get the new uploaded image file
             };
+
+            var formData = new FormData();
+            for (var key in updatedProduct) {
+                formData.append(key, updatedProduct[key]);
+            }
 
             $.ajax({
                 type: 'POST',
-                url: 'update_product.php', // Create this PHP file to update the product
-                data: updatedProduct,
+                url: 'update_product.php',
+                data: formData,
+                processData: false,
+                contentType: false,
                 success: function (response) {
                     alert('Product updated successfully!');
+                    $('#editForm')[0].reset();
                     $('#editProductModal').modal('hide');
                     loadProductList();
                 }
             });
+        });
+
+        // Load initial product list on page load
+        $(document).ready(function () {
+            loadProductList();
         });
 
 
@@ -269,10 +299,10 @@
                 $.ajax({
                     type: 'POST',
                     url: 'delete.php',
-                    data: { id: productId }, // Send the product ID to the server
+                    data: { id: productId },
                     success: function (response) {
-                        alert(response); // Show the response message from the server
-                        loadProductList(); // Refresh the product list
+                        alert(response);
+                        loadProductList();
                     }
                 });
             }

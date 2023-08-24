@@ -1,28 +1,33 @@
 <?php
-// Assuming you have a database connection established
+// Include the database connection
 include 'config.php';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Assuming you're using proper validation and sanitization for the inputs
-    $productId = $_POST['id'];
-    $productName = $_POST['product_name'];
-    $unit = $_POST['unit'];
-    $price = $_POST['price'];
-    $expiryDate = $_POST['expiry_date'];
-    $inventory = $_POST['inventory'];
+$id = $_POST['id'];
+$product_name = mysqli_real_escape_string($conn, $_POST['product_name']);
+$unit = mysqli_real_escape_string($conn, $_POST['unit']);
+$price = mysqli_real_escape_string($conn, $_POST['price']);
+$expiry_date = mysqli_real_escape_string($conn, $_POST['expiry_date']);
+$inventory = mysqli_real_escape_string($conn, $_POST['inventory']);
+$inventory_cost = $price * $inventory; // Calculate inventory cost
 
-    // Update the product details in the database
-    $query = "UPDATE products SET product_name = '$productName', unit = '$unit', price = '$price', expiry_date = '$expiryDate', inventory = '$inventory' WHERE id = $productId";
-    $result = mysqli_query($connection, $query);
-
-    if ($result) {
-        echo "Product updated successfully!";
-    } else {
-        echo "Failed to update product";
-    }
-} else {
-    echo "Invalid request";
+// Handle the new image upload
+$new_image_path = '';
+if (isset($_FILES['new_image']) && $_FILES['new_image']['error'] === UPLOAD_ERR_OK) {
+    $new_image = $_FILES['new_image'];
+    $new_image_name = basename($new_image['name']);
+    $new_image_path = 'uploads/' . $new_image_name;
+    move_uploaded_file($new_image['tmp_name'], $new_image_path);
 }
 
-mysqli_close($connection);
+// Update product data including inventory_cost
+$query = "UPDATE products SET product_name = '$product_name', unit = '$unit', price = '$price', expiry_date = '$expiry_date', inventory = '$inventory', inventory_cost = '$inventory_cost', image_path = '$new_image_path' WHERE id = '$id'";
+$result = $conn->query($query);
+
+if ($result) {
+    echo json_encode(array('message' => 'Product Updated Successfully'));
+} else {
+    echo json_encode(array('message' => 'Error Updating Product'));
+}
+
+$conn->close();
 ?>
