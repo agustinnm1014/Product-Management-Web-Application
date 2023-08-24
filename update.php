@@ -3,19 +3,20 @@
 include 'config.php';
 
 $id = $_POST['id'];
+$product_name = mysqli_real_escape_string($conn, $_POST['product_name']);
+$unit = mysqli_real_escape_string($conn, $_POST['unit']);
+$price = mysqli_real_escape_string($conn, $_POST['price']);
+$expiry_date = mysqli_real_escape_string($conn, $_POST['expiry_date']);
+$inventory = mysqli_real_escape_string($conn, $_POST['inventory']);
 
-// Sanitize and escape data
-$id = mysqli_real_escape_string($conn, $id);
-
-// Retrieve product data
-$query = "SELECT * FROM products WHERE id = '$id'";
+// Update product data
+$query = "UPDATE products SET product_name = '$product_name', unit = '$unit', price = '$price', expiry_date = '$expiry_date', inventory = '$inventory' WHERE id = '$id'";
 $result = $conn->query($query);
 
-if ($result->num_rows > 0) {
-    $product = $result->fetch_assoc();
-    echo json_encode($product);
+if ($result) {
+    echo json_encode(array('message' => 'Product updated successfully'));
 } else {
-    echo json_encode(null);
+    echo json_encode(array('message' => 'Error updating product'));
 }
 
 $conn->close();
