@@ -105,7 +105,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="editForm" enctype="multipart/form-data"> <!-- Add enctype attribute -->
+                    <form id="editForm" enctype="multipart/form-data">
                         <input type="hidden" id="editProductId">
                         <div class="mb-3">
                             <label for="editProductName" class="form-label">Product Name</label>
